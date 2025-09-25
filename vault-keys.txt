@@ -1,4 +1,0 @@
-Root Token: myroot
-
-Vault Status: Running in dev mode
-Vault Address: http://localhost:8200

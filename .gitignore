@@ -68,3 +68,13 @@ logs/
 .docker/
 
 .flattened-pom.xml
+
+# Security - Certificates and Keys
+certs/
+*.pem
+*.key
+*.crt
+vault-keys.txt
+
+# Temporary files
+/tmp/port-forward.log

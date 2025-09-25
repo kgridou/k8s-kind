@@ -84,6 +84,9 @@ jobs:
         sed -i 's/myapp:latest/myapp:test/g' k8s/myapp.yaml
         kubectl apply -f k8s/myapp.yaml
         
+    - name: Install jq
+      run: sudo apt-get update && sudo apt-get install -y jq
+        
     - name: Wait for deployment and test
       run: |
         # Wait for pods to be ready
@@ -95,39 +98,49 @@ jobs:
         
         # Test all endpoints
         echo "Testing home endpoint..."
-        response=$(curl -s http://localhost:8080/ | jq -r '.status')
-        if [[ "$response" != "running" ]]; then
-          echo "❌ Home endpoint test failed"
+        response=$(curl -s http://localhost:8080/)
+        echo "Response: $response"
+        status=$(echo "$response" | jq -r '.status')
+        if [[ "$status" != "running" ]]; then
+          echo "❌ Home endpoint test failed - expected 'running', got '$status'"
           exit 1
         fi
         echo "✅ Home endpoint working"
         
         echo "Testing health endpoint..."
-        response=$(curl -s http://localhost:8080/health | jq -r '.status')
-        if [[ "$response" != "healthy" ]]; then
-          echo "❌ Health endpoint test failed"
+        response=$(curl -s http://localhost:8080/health)
+        echo "Response: $response"
+        status=$(echo "$response" | jq -r '.status')
+        if [[ "$status" != "healthy" ]]; then
+          echo "❌ Health endpoint test failed - expected 'healthy', got '$status'"
           exit 1
         fi
         echo "✅ Health endpoint working"
         
         echo "Testing config endpoint..."
-        if ! curl -s http://localhost:8080/config | jq -e '.["jwt-secret-configured"]' > /dev/null; then
+        response=$(curl -s http://localhost:8080/config)
+        echo "Response: $response"
+        if ! echo "$response" | jq -e '.["jwt-secret-configured"]' > /dev/null; then
           echo "❌ Config endpoint test failed"
           exit 1
         fi
         echo "✅ Config endpoint working"
         
         echo "Testing vault integration endpoint..."
-        if ! curl -s http://localhost:8080/vault-test | jq -e '.["jwt-secret-masked"]' > /dev/null; then
+        response=$(curl -s http://localhost:8080/vault-test)
+        echo "Response: $response"
+        if ! echo "$response" | jq -e '.["jwt-secret-masked"]' > /dev/null; then
           echo "❌ Vault integration test failed"
           exit 1
         fi
         echo "✅ Vault integration working"
         
         echo "Testing actuator health..."
-        response=$(curl -s http://localhost:8080/actuator/health | jq -r '.status')
-        if [[ "$response" != "UP" ]]; then
-          echo "❌ Actuator health test failed"
+        response=$(curl -s http://localhost:8080/actuator/health)
+        echo "Response: $response"
+        status=$(echo "$response" | jq -r '.status')
+        if [[ "$status" != "UP" ]]; then
+          echo "❌ Actuator health test failed - expected 'UP', got '$status'"
           exit 1
         fi
         echo "✅ Actuator health working"
