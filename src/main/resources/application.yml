@@ -1,0 +1,79 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: myapp
+
+  # Vault Configuration
+  cloud:
+    vault:
+      uri: https://vault.local:8200
+      authentication: kubernetes
+      kubernetes:
+        role: myapp
+        service-account-token-file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      ssl:
+        trust-certificate: /etc/ssl/certs/vault/tls.crt
+      kv:
+        enabled: true
+        backend: secret
+        application-name: myapp
+      database:
+        enabled: true
+        role: readonly
+        backend: database
+      config:
+        lifecycle:
+          enabled: true
+          min-renewal: 10s
+          expiry-threshold: 1m
+
+  # Database Configuration (values will be injected from Vault)
+  datasource:
+    url: jdbc:postgresql://${vault.secret.myapp.db.host:localhost}:${vault.secret.myapp.db.port:5432}/${vault.secret.myapp.db.database:myapp}
+    username: ${vault.secret.myapp.db.username:defaultuser}
+    password: ${vault.secret.myapp.db.password:defaultpass}
+    driver-class-name: org.postgresql.Driver
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+# Management/Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,vault
+  endpoint:
+    health:
+      show-details: always
+
+# Application-specific configuration (values from Vault)
+app:
+  api:
+    external-key: ${vault.secret.myapp.api.external-api-key:default-key}
+    jwt-secret: ${vault.secret.myapp.api.jwt-secret:default-secret}
+
+  features:
+    vault-integration: true
+    database-enabled: true
+
+# Logging Configuration
+logging:
+  level:
+    com.example: DEBUG
+    org.springframework.vault: DEBUG
+    org.springframework.cloud.vault: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
