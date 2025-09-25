@@ -56,11 +56,11 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- H2 for testing -->
+        <!-- H2 for runtime -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- Testing -->
